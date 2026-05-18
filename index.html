@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CTF Writeup — The Denver Courier Case</title>
+  <style>
+    :root {
+      --bg: #100d08;
+      --surface: #1a1610;
+      --surface2: #221c12;
+      --border: #38301e;
+      --accent: #c9852a;
+      --accent2: #8a6e3a;
+      --green: #7a9e5c;
+      --yellow: #d4a83a;
+      --red: #c05a38;
+      --text: #e0d5be;
+      --muted: #8a7a5e;
+      --heading: #f4ead8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 16px;
+      line-height: 1.7;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #0e0a05 0%, #1c1408 50%, #0e0a05 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 60px 24px 48px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(201,133,42,.10) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .tag {
+      display: inline-block;
+      background: rgba(201,133,42,.15);
+      border: 1px solid rgba(201,133,42,.35);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 800;
+      color: var(--heading);
+      letter-spacing: -.02em;
+      line-height: 1.15;
+      margin-bottom: 16px;
+    }
+
+    header h1 span {
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    header .subtitle {
+      color: var(--muted);
+      font-size: 1.05rem;
+      max-width: 560px;
+      margin: 0 auto 32px;
+    }
+
+    .meta-row {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .meta-pill {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 16px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .meta-pill strong { color: var(--text); }
+
+    /* ── Layout ── */
+    main {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 60px 24px 100px;
+    }
+
+    /* ── Intro box ── */
+    .intro-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--red);
+      border-radius: 10px;
+      padding: 24px 28px;
+      margin-bottom: 60px;
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .intro-box p + p { margin-top: 12px; }
+
+    /* ── Steps ── */
+    .steps { display: flex; flex-direction: column; gap: 56px; }
+
+    .step {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 22px 28px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .step-number {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #c9852a, #8a4a20);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .step-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--heading);
+    }
+
+    .step-body {
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .step-body p { color: var(--text); }
+
+    /* ── Screenshot placeholder ── */
+    .screenshot {
+      background: #0a0c12;
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .screenshot-icon {
+      width: 36px;
+      height: 36px;
+      flex-shrink: 0;
+      border-radius: 6px;
+      background: var(--surface2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .screenshot-label { font-style: italic; }
+
+    /* ── Code / terminal blocks ── */
+    .terminal {
+      background: #0c0906;
+      border: 1px solid #2e2414;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .terminal-bar {
+      background: #161008;
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      border-bottom: 1px solid #2e2414;
+    }
+
+    .dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+    }
+
+    .dot-red   { background: #e05c5c; }
+    .dot-yellow{ background: #f0c060; }
+    .dot-green { background: #3ec97a; }
+
+    .terminal-label {
+      margin-left: 8px;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    .terminal pre {
+      padding: 18px 20px;
+      font-family: 'Cascadia Code', 'Fira Code', 'Courier New', monospace;
+      font-size: 13.5px;
+      line-height: 1.65;
+      color: #d4c4a0;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    .terminal pre .prompt { color: var(--green); }
+    .terminal pre .comment { color: #5a4e38; }
+    .terminal pre .string { color: var(--yellow); }
+    .terminal pre .value { color: #c07848; }
+
+    /* ── Callout boxes ── */
+    .callout {
+      border-radius: 8px;
+      padding: 16px 20px;
+      font-size: 14.5px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .callout-icon { font-size: 18px; flex-shrink: 0; line-height: 1.4; }
+
+    .callout-tip {
+      background: rgba(122,158,92,.10);
+      border: 1px solid rgba(122,158,92,.30);
+      color: #a8c888;
+    }
+
+    .callout-warn {
+      background: rgba(212,168,58,.08);
+      border: 1px solid rgba(212,168,58,.28);
+      color: #d4b870;
+    }
+
+    .callout-info {
+      background: rgba(201,133,42,.08);
+      border: 1px solid rgba(201,133,42,.28);
+      color: #d4a878;
+    }
+
+    /* ── Answer reveal ── */
+    .answer-box {
+      background: rgba(192,90,56,.10);
+      border: 1px solid rgba(192,90,56,.30);
+      border-radius: 8px;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .answer-box .answer-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--red);
+    }
+
+    .answer-box .answer-value {
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #e0a878;
+    }
+
+    /* ── TOC ── */
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px 28px;
+      margin-bottom: 48px;
+    }
+
+    .toc h2 {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    .toc ol {
+      list-style: none;
+      counter-reset: toc;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .toc ol li {
+      counter-increment: toc;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .toc ol li::before {
+      content: counter(toc, decimal-leading-zero);
+      font-size: 11px;
+      color: var(--muted);
+      font-family: monospace;
+      min-width: 22px;
+    }
+
+    .toc ol li a {
+      color: var(--text);
+      text-decoration: none;
+      font-size: 14px;
+      transition: color .15s;
+    }
+
+    .toc ol li a:hover { color: var(--accent); }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      text-align: center;
+      padding: 40px 24px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    footer a { color: var(--accent); text-decoration: none; }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .step-body { padding: 20px; }
+      .step-header { padding: 18px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════ HEADER ══════════════ -->
+<header>
+  <div class="tag">CTF Writeup</div>
+  <h1>The <span>Denver Courier</span> Case</h1>
+  <p class="subtitle">
+    A narrative web CTF — missing persons, morse code, FTP servers, and a Caesar cipher walk into a bar.
+  </p>
+  <div class="meta-row">
+    <div class="meta-pill">Category: <strong>Web / OSINT / Crypto</strong></div>
+    <div class="meta-pill">Difficulty: <strong>Beginner–Intermediate</strong></div>
+    <div class="meta-pill">Flag: <strong>Multi-step narrative</strong></div>
+  </div>
+</header>
+
+<!-- ══════════════ MAIN ══════════════ -->
+<main>
+
+  <!-- AI Disclosure -->
+  <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 18px;margin-bottom:28px;font-size:13px;color:var(--muted);display:flex;gap:10px;align-items:flex-start;">
+    <span style="flex-shrink:0;">🤖</span>
+    <span><strong style="color:var(--text);">AI disclosure:</strong> Claude Code was used to build the websites and infrastructure for this CTF. The creative work — the puzzle chain, narrative, ciphers, and challenge design — is entirely my own.</span>
+  </div>
+
+  <!-- Intro -->
+  <div class="intro-box">
+    <p>It seems like my leaderboard database is getting euthanized by the cloud provider because it's DorMaNT, which means it's time for the reveal.</p>
+    <p>Let's just dive in.</p>
+  </div>
+
+  <!-- TOC -->
+  <div class="toc">
+    <h2>Table of Contents</h2>
+    <ol>
+      <li><a href="#step-1">Articles — The Denver Courier</a></li>
+      <li><a href="#step-2">robots.txt</a></li>
+      <li><a href="#step-3">Enumerating the VPS</a></li>
+      <li><a href="#step-4">Accessing FTP</a></li>
+      <li><a href="#step-5">The Coordinates</a></li>
+      <li><a href="#step-6">The Password (Morse Code)</a></li>
+      <li><a href="#step-7">Marcus's Journal</a></li>
+      <li><a href="#step-8">SSH Banner Grabbing</a></li>
+      <li><a href="#step-9">Codepen — Binary &amp; Union</a></li>
+      <li><a href="#step-10">The Hidden Login Page</a></li>
+      <li><a href="#step-11">Scheming — The Confession</a></li>
+    </ol>
+  </div>
+
+  <!-- ══ STEPS ══ -->
+  <div class="steps">
+
+    <!-- 1 -->
+    <div class="step" id="step-1">
+      <div class="step-header">
+        <div class="step-number">1</div>
+        <div class="step-title">Articles — The Denver Courier</div>
+      </div>
+      <div class="step-body">
+        <p>All links to the game land on a fictional news site, 'The Denver Courier', which headlines a segment on a man that went missing in Downtown Denver.</p>
+
+        <img src="img-01-headline.png" alt="The Denver Courier headline — Family Pleads for Help Finding Marcus Dellwood" style="width:100%;border-radius:8px;border:1px solid var(--border);" />
+
+        <p>When you navigate to the article you'll see the basic premise of this narrative CTF. Seemingly normal guy suddenly disappears after mysterious circumstances, and the challenges throughout the game come with hints on what happens. There's nothing technical in this article.</p>
+        <p>You'll also see a few other articles but the only one you need to focus on is, "Robots Like Texting, CU Boulder Researchers Discover."</p>
+      </div>
+    </div>
+
+    <!-- 2 -->
+    <div class="step" id="step-2">
+      <div class="step-header">
+        <div class="step-number">2</div>
+        <div class="step-title">robots.txt</div>
+      </div>
+      <div class="step-body">
+        <p>This was initially the only hint I had since 'robots texting' can only mean one thing in web app security, but it seems like people were struggling with that so I added a banner that linked to robots.txt.</p>
+
+        <img src="img-02-articles-banner.png" alt="Denver Courier article list with robots.txt banner" style="width:100%;border-radius:8px;border:1px solid var(--border);" />
+
+        <img src="img-03-brown-site.png" alt="The Denver Courier brown puzzle page" style="width:100%;border-radius:8px;border:1px solid var(--border);" />
+
+        <img src="img-04-robots-txt.png" alt="robots.txt contents with Base64 string" style="width:100%;border-radius:8px;border:1px solid var(--border);" />
+
+        <p>You'll see a strange string below the normal directory permissions. Most CTFs have some form of encoding/decoding challenges so I followed suit with base 64 encoding. You can simply go to a decoding website like the one below (or ask AI.)</p>
+
+        <img src="img-05-base64-decode.png" alt="Base64 decoding — NDUuNTUuNTMuMTAw decodes to 45.55.53.100" style="width:100%;border-radius:8px;border:1px solid var(--border);" />
+
+        <p>The decoded version is '45.55.53.100' which is the IP address of the VPS (Virtual Private Server) hosting the next clues.</p>
+      </div>
+    </div>
+
+    <!-- 3 -->
+    <div class="step" id="step-3">
+      <div class="step-header">
+        <div class="step-number">3</div>
+        <div class="step-title">Enumerating the VPS</div>
+      </div>
+      <div class="step-body">
+        <p>Run a basic Nmap scan and you'll see the following ports are open.</p>
+
+        <div class="terminal">
+          <div class="terminal-bar">
+            <div class="dot dot-red"></div>
+            <div class="dot dot-yellow"></div>
+            <div class="dot dot-green"></div>
+            <div class="terminal-label">bash</div>
+          </div>
+          <pre><span class="prompt">maya@mayadesktop:~$</span> nmap -sV 45.55.53.100
+Starting Nmap 7.94SVN ( https://nmap.org ) at 2026-05-17 19:06 MDT
+Nmap scan report for 45.55.53.100
+Host is up (0.052s latency).
+Not shown: 994 closed tcp ports (conn-refused)
+PORT    STATE    SERVICE      VERSION
+21/tcp  open     ftp          pyftpdlib 2.2.0
+22/tcp  open     ssh          OpenSSH 9.6p1 Ubuntu 3ubuntu13.16 (Ubuntu Linux; protocol 2.0)
+25/tcp  filtered smtp
+135/tcp filtered msrpc
+139/tcp filtered netbios-ssn
+445/tcp filtered microsoft-ds
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+Nmap done: 1 IP address (1 host up) scanned in 2.16 seconds</pre>
+        </div>
+
+        <p>The only open services are SSH and FTP, which is great because that's all you'll need.</p>
+      </div>
+    </div>
+
+    <!-- 4 -->
+    <div class="step" id="step-4">
+      <div class="step-header">
+        <div class="step-number">4</div>
+        <div class="step-title">Accessing FTP</div>
+      </div>
+      <div class="step-body">
+        <p>Seems like Marcus is a bad security professional since he allows anonymous authentication on his diary FTP server. Connect using the following command with 'anonymous' as the username and a blank password.</p>
+
+        <div class="terminal">
+          <div class="terminal-bar">
+            <div class="dot dot-red"></div>
+            <div class="dot dot-yellow"></div>
+            <div class="dot dot-green"></div>
+            <div class="terminal-label">bash</div>
+          </div>
+          <pre><span class="prompt">maya@mayadesktop:~$</span> ftp 45.55.53.100
+Connected to 45.55.53.100.
+220 pyftpdlib 2.2.0 ready.
+Name (45.55.53.100:maya): <span class="string">anonymous</span>
+331 Username ok, send password.
+Password:
+230 Login successful.
+Remote system type is UNIX.
+Using binary mode to transfer files.</pre>
+        </div>
+
+        <p>Explore the directory and you'll find the following files.</p>
+
+        <div class="terminal">
+          <div class="terminal-bar">
+            <div class="dot dot-red"></div>
+            <div class="dot dot-yellow"></div>
+            <div class="dot dot-green"></div>
+            <div class="terminal-label">ftp</div>
+          </div>
+          <pre>ftp> ls
+-rw-r--r--   1 root  root   36 May 04 01:58 <span class="string">coords.txt</span>
+-rw-r--r--   1 root  root  528 May 06 00:30 <span class="string">journal.txt</span>
+-rw-r--r--   1 root  root   24 May 06 12:58 <span class="string">password.txt</span></pre>
+        </div>
+
+        <p>Use the get command to install the files. It's generally good security hygiene to use a virtual machine for CTFs since you shouldn't be downloading random files onto your computer, but I promise you there's no malware here!</p>
+
+        <div class="terminal">
+          <div class="terminal-bar">
+            <div class="dot dot-red"></div>
+            <div class="dot dot-yellow"></div>
+            <div class="dot dot-green"></div>
+            <div class="terminal-label">ftp</div>
+          </div>
+          <pre>ftp> get coords.txt
+226 Transfer complete. (36 bytes)
+ftp> get journal.txt
+226 Transfer complete. (528 bytes)
+ftp> get password.txt
+226 Transfer complete. (24 bytes)
+ftp> bye
+221 Goodbye.</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5 -->
+    <div class="step" id="step-5">
+      <div class="step-header">
+        <div class="step-number">5</div>
+        <div class="step-title">The Coordinates</div>
+      </div>
+      <div class="step-body">
+        <p>You'll find that one of the files, coords.txt, contains latitude/longitude coordinates. Go to Google maps and paste 39.753187, -105.000093. Union station will be a clue in an upcoming challenge.</p>
+
+        <img src="img-05-union-station.png" alt="Google Maps pin on Union Station, Denver — 39.753187, -105.000093" style="width:100%;border-radius:8px;border:1px solid var(--border);" />
+      </div>
+    </div>
+
+    <!-- 6 -->
+    <div class="step" id="step-6">
+      <div class="step-header">
+        <div class="step-number">6</div>
+        <div class="step-title">The Password — Morse Code</div>
+      </div>
+      <div class="step-body">
+        <p>Use the cat command again on passwords.txt and you'll find a series of dots and dashes.</p>
+
+        <div class="terminal">
+          <div class="terminal-bar">
+            <div class="dot dot-red"></div>
+            <div class="dot dot-yellow"></div>
+            <div class="dot dot-green"></div>
+            <div class="terminal-label">bash</div>
+          </div>
+          <pre><span class="prompt">maya@mayadesktop:~$</span> cat password.txt
+<span class="value">----- ..... ..--- .....</span></pre>
+        </div>
+
+        <p>This is morse code. You can go to a morse code decoder (or ask AI) and it'll reveal the pin '0525.' Congratulations! We have our password.</p>
+      </div>
+    </div>
+
+    <!-- 7 -->
+    <div class="step" id="step-7">
+      <div class="step-header">
+        <div class="step-number">7</div>
+        <div class="step-title">Marcus's Journal</div>
+      </div>
+      <div class="step-body">
+        <p>We also get some very upbeat diary entries from Marcus.</p>
+
+        <div class="terminal">
+          <div class="terminal-bar">
+            <div class="dot dot-red"></div>
+            <div class="dot dot-yellow"></div>
+            <div class="dot dot-green"></div>
+            <div class="terminal-label">bash</div>
+          </div>
+          <pre><span class="prompt">maya@mayadesktop:~$</span> cat journal.txt
+March 3, 2026
+
+Renata called again. Told her I'm fine. I am fine. Just tired.
+Paid $22 for a grain bowl on Larimer today. Quinoa, some sad little
+pickled things, a drizzle of "house goddess dressing" or whatever.
+Ate it at my desk. Denver is cooked.
+
+April 2, 2026
+
+Something feels off lately. Can't place it.
+Went for a walk down by the water after work. Helped a little.
+
+April 18, 2026
+
+Last entry for a while. Going dark.
+If you're reading this and you're not me — you're closer than you think.
+Follow the numbers.
+
+- M</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- 8 -->
+    <div class="step" id="step-8">
+      <div class="step-header">
+        <div class="step-number">8</div>
+        <div class="step-title">SSH Banner Grabbing</div>
+      </div>
+      <div class="step-body">
+        <p>Unfortunately I may have mislead some of the users since this part requires you to ATTEMPT to authenticate, but you don't have to succeed at all.</p>
+        <p>You'll find a link to a Codepen site via banner grabbing.</p>
+
+        <div class="terminal">
+          <div class="terminal-bar">
+            <div class="dot dot-red"></div>
+            <div class="dot dot-yellow"></div>
+            <div class="dot dot-green"></div>
+            <div class="terminal-label">bash</div>
+          </div>
+          <pre><span class="prompt">maya@mayadesktop:~$</span> ssh fakeuser@45.55.53.100
+<span class="string">MARCUS-SECRET-STUFF // UNAUTHORIZED ACCESS DETECTED
+
+https://codepen.io/mayadouglas1101/pen/QwGbMNX</span>
+fakeuser@45.55.53.100: Permission denied (publickey).</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- 9 -->
+    <div class="step" id="step-9">
+      <div class="step-header">
+        <div class="step-number">9</div>
+        <div class="step-title">Codepen — Binary &amp; Union</div>
+      </div>
+      <div class="step-body">
+        <p>You'll land on the Codepen page below - (The Marcus Aurelius reference is kind of a shoutout to the philosophy side of symbolic logic/set theory. I'm not a stoic, I promise.)</p>
+
+        <img src="img-08-codepen.png" alt="Codepen — MARCUS-AURELIUS symbolic logic binary challenge" style="width:100%;border-radius:8px;border:1px solid var(--border);" />
+
+        <p>You're presented with two binary strings along with some choices of what operator to use on it. We found the coordinates for Union Station earlier so the correct operator to use here is union as well. There's a button that does all the calculating for you.</p>
+
+        <img src="img-09-union-result.png" alt="Codepen — Union operation result binary string" style="width:100%;border-radius:8px;border:1px solid var(--border);" />
+
+        <p>Put that in a binary decoder and you'll get 'the runaway'</p>
+
+        <img src="img-10-binary-decoder.png" alt="Binary decoder — result decodes to 'therunaway'" style="width:100%;border-radius:8px;border:1px solid var(--border);" />
+      </div>
+    </div>
+
+    <!-- 10 -->
+    <div class="step" id="step-10">
+      <div class="step-header">
+        <div class="step-number">10</div>
+        <div class="step-title">The Hidden Login Page</div>
+      </div>
+      <div class="step-body">
+        <p>The phrase "the runaway" is the username for a hidden login portal connected to the original Denver Courier site. Running DirBuster against the landing page (or manually navigating to /login) reveals the link to the portal.</p>
+
+        <img src="img-11-fake-login.png" alt="Denver Courier Staff Login page with Caesar cipher clue" style="width:100%;border-radius:8px;border:1px solid var(--border);" />
+
+        <p>You'll see there's a link-like string, oaawz://thfhkvbnshz1101.npaobi.pv/svnpu-whnl/, but it isn't formatted like a domain. 'Is anyone feeling like a salad' is a clue to the cipher used on the domain - Caesar cipher. Decode it with a website (or AI) to reveal https://mayadouglas1101.github.io/login-page/.</p>
+
+        <img src="img-12-real-login.png" alt="Missing Persons Digital Evidence Portal — restricted access login" style="width:100%;border-radius:8px;border:1px solid var(--border);" />
+      </div>
+    </div>
+
+    <!-- 11 -->
+    <div class="step" id="step-11">
+      <div class="step-header">
+        <div class="step-number">11</div>
+        <div class="step-title">Scheming — The Confession</div>
+      </div>
+      <div class="step-body">
+        <p>Enter the credentials 'therunaway' and '0525' in 'Secure Terminal' and you'll find Marcus's confession.</p>
+
+        <img src="img-13-confession.png" alt="Marcus Dellwood's recovered journal entry — Entry #214 That's a Wrap" style="width:100%;border-radius:8px;border:1px solid var(--border);" />
+
+        <p>At this point, Marcus disappearing into the wilderness may have been the healthiest possible outcome for everyone involved.</p>
+      </div>
+    </div>
+
+  </div><!-- /steps -->
+
+  <div class="intro-box" style="margin-top: 56px; margin-bottom: 0;">
+    <p>That's all, folks! There is a leaderboard, but I won't be sharing it here for privacy purposes.</p>
+  </div>
+
+  <img src="img-14-thankyou.png" alt="End of file — Thank You from the CTF creator" style="width:100%;border-radius:8px;border:1px solid var(--border);margin-top:24px;display:block;" />
+
+</main>
+
+<!-- ══════════════ FOOTER ══════════════ -->
+<footer>
+  <p>CTF writeup — The Denver Courier Case</p>
+  <p style="margin-top:8px;">Made with obsessive puzzle energy and too much coffee.</p>
+</footer>
+
+</body>
+</html>
