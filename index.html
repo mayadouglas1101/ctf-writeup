@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CTF Writeup — The Denver Courier Case</title>
+  <title>Missing - An Alternative Reality CTF</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Playfair+Display:ital,wght@0,700;1,400;1,700&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Playfair+Display:ital,wght@0,700;1,400;1,500;1,700&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg:          #06050a;
@@ -20,7 +20,7 @@
       --gold:        #c9a028;
       --gold-dim:    rgba(201,160,40,0.15);
       --green-text:  #4a7a5a;
-      --text:        #d4c8ae;
+      --text:        #f4ead8;
       --muted:       #7a6e60;
       --muted2:      #2e2630;
       --heading:     #ede0c4;
@@ -48,8 +48,8 @@
       background: var(--bg);
       color: var(--text);
       font-family: var(--mono);
-      font-size: 15px;
-      line-height: 1.85;
+      font-size: 16px;
+      line-height: 1.9;
     }
 
     /* ── Film grain overlay ── */
@@ -120,7 +120,7 @@
       transform: translate(-50%, -50%) rotate(-10deg);
       font-family: var(--stamp);
       font-size: clamp(4rem, 17vw, 13rem);
-      color: rgba(139,26,26,0.04);
+      color: rgba(139,26,26,0.022);
       letter-spacing: .2em;
       pointer-events: none;
       white-space: nowrap;
@@ -150,7 +150,7 @@
       border: 2px solid var(--red);
       color: var(--red);
       font-family: var(--stamp);
-      font-size: 9px;
+      font-size: 10px;
       letter-spacing: .35em;
       text-transform: uppercase;
       padding: 5px 18px;
@@ -194,7 +194,7 @@
 
     .case-number {
       font-family: var(--mono);
-      font-size: 10px;
+      font-size: 12px;
       color: var(--muted);
       letter-spacing: .22em;
       text-transform: uppercase;
@@ -204,7 +204,6 @@
 
     header .subtitle {
       font-family: var(--serif);
-      font-style: italic;
       color: var(--muted);
       font-size: 0.98rem;
       max-width: 500px;
@@ -227,7 +226,7 @@
       border-right: 1px solid var(--border);
       padding: 10px 16px;
       font-family: var(--stamp);
-      font-size: 9px;
+      font-size: 10px;
       letter-spacing: .18em;
       color: var(--muted);
       text-transform: uppercase;
@@ -239,7 +238,7 @@
     .meta-pill strong {
       display: block;
       font-family: var(--mono);
-      font-size: 11px;
+      font-size: 13px;
       letter-spacing: .04em;
       color: var(--text);
       margin-top: 4px;
@@ -268,11 +267,12 @@
     /* ── Intro / Case Summary ── */
     .intro-box {
       background: var(--surface);
-      border: 1px solid var(--border);
+      border: 1px solid rgba(100,75,60,0.55);
       border-left: 4px solid var(--red);
       padding: 26px 30px;
       margin-bottom: 52px;
       position: relative;
+      box-shadow: 0 0 22px rgba(139,26,26,0.09), 0 2px 10px rgba(0,0,0,0.3);
     }
 
     .intro-box::before {
@@ -291,10 +291,10 @@
 
     .intro-box p {
       font-family: var(--serif);
-      font-style: italic;
       font-size: 16px;
+      font-weight: 500;
       color: var(--text);
-      line-height: 1.8;
+      line-height: 1.85;
     }
 
     .intro-box p + p { margin-top: 14px; }
@@ -302,11 +302,12 @@
     /* ── TOC ── */
     .toc {
       background: var(--surface);
-      border: 1px solid var(--border);
+      border: 1px solid rgba(100,75,60,0.55);
       padding: 0;
       margin-bottom: 52px;
       position: relative;
       overflow: hidden;
+      box-shadow: 0 0 22px rgba(139,26,26,0.07), 0 2px 10px rgba(0,0,0,0.3);
     }
 
     /* Dashed red top border — like evidence tape */
@@ -332,7 +333,7 @@
 
     .toc h2 {
       font-family: var(--stamp);
-      font-size: 10px;
+      font-size: 12px;
       letter-spacing: .3em;
       color: var(--muted);
       text-transform: uppercase;
@@ -352,8 +353,9 @@
       display: flex;
       align-items: baseline;
       gap: 14px;
-      padding: 5px 0;
+      padding: 8px 0;
       border-bottom: 1px dotted var(--border2);
+      line-height: 1.6;
     }
 
     .toc ol li:last-child { border-bottom: none; }
@@ -464,8 +466,9 @@
     .step-body p {
       color: var(--text);
       font-family: var(--serif);
-      font-size: 16px;
-      line-height: 1.85;
+      font-size: 17px;
+      font-weight: 500;
+      line-height: 1.95;
     }
 
     /* Images — harsh, no rounded corners, polaroid shadow */
@@ -787,10 +790,7 @@
 <header>
   <div class="header-inner">
     <div class="case-stamp">Case File No. 1047 &nbsp;·&nbsp; Classified</div>
-    <h1>
-      <span class="the">The</span>
-      Denver Courier Case
-    </h1>
+    <h1>Missing - An Alternative Reality CTF</h1>
     <p class="case-number">Missing Person Investigation — CTF Writeup</p>
     <p class="subtitle">
       A narrative web CTF — missing persons, morse code, FTP servers,<br>and a Caesar cipher walk into a bar.
