@@ -4,388 +4,802 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CTF Writeup — The Denver Courier Case</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Playfair+Display:ital,wght@0,700;1,400;1,700&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #100d08;
-      --surface: #1a1610;
-      --surface2: #221c12;
-      --border: #38301e;
-      --accent: #c9852a;
-      --accent2: #8a6e3a;
-      --green: #7a9e5c;
-      --yellow: #d4a83a;
-      --red: #c05a38;
-      --text: #e0d5be;
-      --muted: #8a7a5e;
-      --heading: #f4ead8;
+      --bg:          #06050a;
+      --surface:     #0d0b10;
+      --surface2:    #120f16;
+      --border:      #231c2c;
+      --border2:     #160f1c;
+      --red:         #8b1a1a;
+      --red-glow:    rgba(139,26,26,0.25);
+      --red-dim:     rgba(139,26,26,0.08);
+      --gold:        #c9a028;
+      --gold-dim:    rgba(201,160,40,0.15);
+      --green-text:  #4a7a5a;
+      --text:        #d4c8ae;
+      --muted:       #7a6e60;
+      --muted2:      #2e2630;
+      --heading:     #ede0c4;
+      --cream:       #f2e8d2;
+      --mono:        'Courier Prime', 'Courier New', monospace;
+      --serif:       'Playfair Display', Georgia, serif;
+      --stamp:       'Special Elite', 'Courier New', monospace;
+    }
+
+    @keyframes flicker {
+      0%,89%,91%,93%,100% { opacity: 1; }
+      90% { opacity: 0.88; }
+      92% { opacity: 0.95; }
+    }
+
+    @keyframes pulse-border {
+      0%,100% { border-color: rgba(139,26,26,0.6); }
+      50%     { border-color: rgba(139,26,26,0.9); }
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
 
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      font-size: 16px;
-      line-height: 1.7;
+      font-family: var(--mono);
+      font-size: 15px;
+      line-height: 1.85;
     }
 
-    /* ── Header ── */
-    header {
-      background: linear-gradient(135deg, #0e0a05 0%, #1c1408 50%, #0e0a05 100%);
-      border-bottom: 1px solid var(--border);
-      padding: 60px 24px 48px;
-      text-align: center;
+    /* ── Film grain overlay ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+      opacity: 0.06;
+      pointer-events: none;
+      z-index: 9999;
+      mix-blend-mode: overlay;
+    }
+
+    /* ── Vignette ── */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,0.7) 100%);
+      pointer-events: none;
+      z-index: 9998;
+    }
+
+    /* ── Crime scene tape — top of page ── */
+    .tape {
+      height: 5px;
+      background: var(--red);
       position: relative;
       overflow: hidden;
     }
 
+    .tape::after {
+      content: 'DO NOT CROSS · DO NOT CROSS · DO NOT CROSS · DO NOT CROSS · DO NOT CROSS · DO NOT CROSS · DO NOT CROSS · DO NOT CROSS · DO NOT CROSS · DO NOT CROSS · DO NOT CROSS · DO NOT CROSS ·';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      transform: translateY(-50%);
+      font-family: var(--stamp);
+      font-size: 6px;
+      letter-spacing: .15em;
+      color: rgba(255,255,255,0.18);
+      white-space: nowrap;
+      animation: crawl 30s linear infinite;
+    }
+
+    @keyframes crawl {
+      0%   { transform: translateY(-50%) translateX(0); }
+      100% { transform: translateY(-50%) translateX(-50%); }
+    }
+
+    /* ══════════ HEADER ══════════ */
+    header {
+      background: var(--bg);
+      padding: 64px 24px 52px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* MISSING watermark */
     header::before {
+      content: 'MISSING';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-10deg);
+      font-family: var(--stamp);
+      font-size: clamp(4rem, 17vw, 13rem);
+      color: rgba(139,26,26,0.04);
+      letter-spacing: .2em;
+      pointer-events: none;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    /* Red glow line at bottom of header */
+    header::after {
       content: '';
       position: absolute;
-      inset: 0;
-      background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(201,133,42,.10) 0%, transparent 70%);
-      pointer-events: none;
+      bottom: -1px; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent 0%, var(--red) 50%, transparent 100%);
+      opacity: 0.6;
     }
 
-    .tag {
+    /* Horizontal rule lines framing header content */
+    .header-inner {
+      position: relative;
       display: inline-block;
-      background: rgba(201,133,42,.15);
-      border: 1px solid rgba(201,133,42,.35);
-      color: var(--accent);
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-      padding: 4px 12px;
-      border-radius: 20px;
-      margin-bottom: 20px;
+      max-width: 680px;
+      width: 100%;
     }
+
+    .case-stamp {
+      display: inline-block;
+      border: 2px solid var(--red);
+      color: var(--red);
+      font-family: var(--stamp);
+      font-size: 9px;
+      letter-spacing: .35em;
+      text-transform: uppercase;
+      padding: 5px 18px;
+      margin-bottom: 28px;
+      position: relative;
+      animation: pulse-border 4s ease-in-out infinite;
+    }
+
+    .case-stamp::before,
+    .case-stamp::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: clamp(20px, 5vw, 56px);
+      height: 1px;
+      background: var(--red);
+      opacity: 0.35;
+    }
+    .case-stamp::before { right: calc(100% + 12px); }
+    .case-stamp::after  { left:  calc(100% + 12px); }
 
     header h1 {
-      font-size: clamp(2rem, 5vw, 3.2rem);
-      font-weight: 800;
+      font-family: var(--stamp);
+      font-weight: 400;
+      font-size: clamp(2.4rem, 6.5vw, 4.2rem);
       color: var(--heading);
-      letter-spacing: -.02em;
-      line-height: 1.15;
-      margin-bottom: 16px;
+      letter-spacing: .05em;
+      line-height: 1.1;
+      margin-bottom: 6px;
+      animation: flicker 9s infinite;
     }
 
-    header h1 span {
-      background: linear-gradient(90deg, var(--accent), var(--accent2));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+    header h1 .the {
+      display: block;
+      font-size: 0.42em;
+      letter-spacing: .45em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .case-number {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      margin-top: 14px;
+      margin-bottom: 28px;
     }
 
     header .subtitle {
+      font-family: var(--serif);
+      font-style: italic;
       color: var(--muted);
-      font-size: 1.05rem;
-      max-width: 560px;
-      margin: 0 auto 32px;
+      font-size: 0.98rem;
+      max-width: 500px;
+      margin: 0 auto 36px;
+      line-height: 1.7;
     }
 
+    /* Police report style meta row */
     .meta-row {
       display: flex;
-      gap: 24px;
       justify-content: center;
-      flex-wrap: wrap;
+      max-width: 580px;
+      margin: 0 auto;
+      border: 1px solid var(--border);
     }
 
     .meta-pill {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 6px 16px;
-      font-size: 13px;
+      flex: 1;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 10px 16px;
+      font-family: var(--stamp);
+      font-size: 9px;
+      letter-spacing: .18em;
       color: var(--muted);
+      text-transform: uppercase;
+      text-align: center;
     }
 
-    .meta-pill strong { color: var(--text); }
+    .meta-pill:last-child { border-right: none; }
 
-    /* ── Layout ── */
+    .meta-pill strong {
+      display: block;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .04em;
+      color: var(--text);
+      margin-top: 4px;
+      text-transform: none;
+    }
+
+    /* ══════════ MAIN ══════════ */
     main {
       max-width: 820px;
       margin: 0 auto;
-      padding: 60px 24px 100px;
+      padding: 56px 24px 100px;
     }
 
-    /* ── Intro box ── */
+    /* ── AI disclosure ── */
+    .ai-disclosure {
+      border: 1px solid var(--muted2);
+      border-left: 3px solid var(--muted);
+      padding: 10px 16px;
+      margin-bottom: 28px;
+      font-size: 12px;
+      color: var(--muted);
+      font-family: var(--mono);
+      background: transparent;
+    }
+
+    /* ── Intro / Case Summary ── */
     .intro-box {
       background: var(--surface);
       border: 1px solid var(--border);
       border-left: 4px solid var(--red);
-      border-radius: 10px;
-      padding: 24px 28px;
-      margin-bottom: 60px;
-      color: var(--muted);
-      font-style: italic;
+      padding: 26px 30px;
+      margin-bottom: 52px;
+      position: relative;
     }
 
-    .intro-box p + p { margin-top: 12px; }
+    .intro-box::before {
+      content: 'CASE SUMMARY';
+      position: absolute;
+      top: -9px;
+      left: 24px;
+      background: var(--surface);
+      padding: 0 8px;
+      font-family: var(--stamp);
+      font-size: 8px;
+      letter-spacing: .25em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
 
-    /* ── Steps ── */
-    .steps { display: flex; flex-direction: column; gap: 56px; }
+    .intro-box p {
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 16px;
+      color: var(--text);
+      line-height: 1.8;
+    }
+
+    .intro-box p + p { margin-top: 14px; }
+
+    /* ── TOC ── */
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 0;
+      margin-bottom: 52px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Dashed red top border — like evidence tape */
+    .toc::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: repeating-linear-gradient(
+        90deg,
+        var(--red) 0px,
+        var(--red) 16px,
+        transparent 16px,
+        transparent 22px
+      );
+      opacity: 0.7;
+    }
+
+    .toc-head {
+      padding: 20px 28px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .toc h2 {
+      font-family: var(--stamp);
+      font-size: 10px;
+      letter-spacing: .3em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .toc ol {
+      list-style: none;
+      counter-reset: toc;
+      padding: 16px 28px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .toc ol li {
+      counter-increment: toc;
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+      padding: 5px 0;
+      border-bottom: 1px dotted var(--border2);
+    }
+
+    .toc ol li:last-child { border-bottom: none; }
+
+    .toc ol li::before {
+      content: counter(toc, decimal-leading-zero);
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--red);
+      min-width: 22px;
+      flex-shrink: 0;
+    }
+
+    .toc ol li a {
+      color: var(--text);
+      text-decoration: none;
+      font-family: var(--mono);
+      font-size: 14px;
+      transition: color .15s;
+      letter-spacing: .02em;
+    }
+
+    .toc ol li:hover a        { color: var(--gold); }
+    .toc ol li:hover::before  { color: var(--gold); }
+
+    /* ══════════ STEPS ══════════ */
+    .steps { display: flex; flex-direction: column; gap: 44px; }
 
     .step {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 14px;
-      overflow: hidden;
+      position: relative;
+    }
+
+    /* Red accent line at top of each card */
+    .step::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--red);
+      opacity: 0.55;
     }
 
     .step-header {
       display: flex;
       align-items: center;
-      gap: 18px;
-      padding: 22px 28px;
+      gap: 16px;
+      padding: 18px 28px;
       background: var(--surface2);
       border-bottom: 1px solid var(--border);
+      position: relative;
     }
 
+    /* Evidence file label — top right of header */
+    .step-header::after {
+      content: 'EVIDENCE';
+      position: absolute;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-family: var(--stamp);
+      font-size: 7px;
+      letter-spacing: .35em;
+      color: var(--muted2);
+      text-transform: uppercase;
+    }
+
+    /* Stamp-style step number */
     .step-number {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, #c9852a, #8a4a20);
-      color: #fff;
+      width: 38px;
+      height: 38px;
+      border: 2px solid var(--red);
+      color: var(--red);
+      font-family: var(--stamp);
       font-size: 15px;
-      font-weight: 800;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
+      background: transparent;
+      position: relative;
+    }
+
+    /* Inner inset — rubber stamp worn edges */
+    .step-number::after {
+      content: '';
+      position: absolute;
+      inset: 3px;
+      border: 1px solid rgba(139,26,26,0.22);
     }
 
     .step-title {
-      font-size: 1.15rem;
-      font-weight: 700;
+      font-family: var(--stamp);
+      font-size: 1.02rem;
+      font-weight: 400;
       color: var(--heading);
+      letter-spacing: .05em;
     }
 
     .step-body {
       padding: 28px;
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 18px;
     }
 
-    .step-body p { color: var(--text); }
-
-    /* ── Screenshot placeholder ── */
-    .screenshot {
-      background: #0a0c12;
-      border: 1px dashed var(--border);
-      border-radius: 8px;
-      padding: 20px 24px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      color: var(--muted);
-      font-size: 13px;
+    .step-body p {
+      color: var(--text);
+      font-family: var(--serif);
+      font-size: 16px;
+      line-height: 1.85;
     }
 
-    .screenshot-icon {
-      width: 36px;
-      height: 36px;
-      flex-shrink: 0;
-      border-radius: 6px;
-      background: var(--surface2);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
+    /* Images — harsh, no rounded corners, polaroid shadow */
+    .step-body img,
+    .closing-img {
+      border: 1px solid var(--border) !important;
+      border-radius: 0 !important;
+      box-shadow: 5px 5px 0 rgba(0,0,0,0.55), 0 0 0 1px rgba(139,26,26,0.08);
     }
 
-    .screenshot-label { font-style: italic; }
-
-    /* ── Code / terminal blocks ── */
+    /* ══════════ TERMINAL ══════════ */
     .terminal {
-      background: #0c0906;
-      border: 1px solid #2e2414;
-      border-radius: 8px;
+      background: #050308;
+      border: 1px solid #1c1424;
+      position: relative;
       overflow: hidden;
     }
 
-    .terminal-bar {
-      background: #161008;
-      padding: 8px 14px;
+    /* CRT scan lines */
+    .terminal::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(255,255,255,0.009) 2px,
+        rgba(255,255,255,0.009) 4px
+      );
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .terminal-titlebar {
+      background: #100c1a;
+      padding: 5px 10px;
       display: flex;
       align-items: center;
-      gap: 7px;
-      border-bottom: 1px solid #2e2414;
+      justify-content: space-between;
+      border-bottom: 1px solid #1c1424;
+      position: relative;
+      z-index: 2;
     }
 
-    .dot {
-      width: 11px;
-      height: 11px;
-      border-radius: 50%;
-    }
-
-    .dot-red   { background: #e05c5c; }
-    .dot-yellow{ background: #f0c060; }
-    .dot-green { background: #3ec97a; }
-
-    .terminal-label {
-      margin-left: 8px;
+    .terminal-title {
+      font-family: var(--mono);
       font-size: 11px;
-      color: var(--muted);
-      letter-spacing: .06em;
-      text-transform: uppercase;
+      color: #4a4258;
+      letter-spacing: .04em;
+    }
+
+    .terminal-controls {
+      display: flex;
+      gap: 3px;
+    }
+
+    .tctrl {
+      width: 20px;
+      height: 16px;
+      border: 1px solid #261e32;
+      background: #0e0b16;
+      color: #3a3248;
+      font-size: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: monospace;
+      cursor: default;
+      user-select: none;
+    }
+
+    .tctrl-x { color: #5a2828; border-color: #3a1e28; }
+
+    .terminal-menubar {
+      background: #0c0914;
+      padding: 3px 12px;
+      display: flex;
+      gap: 18px;
+      border-bottom: 1px solid #1c1424;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: #3a3248;
+      position: relative;
+      z-index: 2;
     }
 
     .terminal pre {
       padding: 18px 20px;
-      font-family: 'Cascadia Code', 'Fira Code', 'Courier New', monospace;
+      font-family: var(--mono);
       font-size: 13.5px;
-      line-height: 1.65;
-      color: #d4c4a0;
+      line-height: 1.75;
+      color: #bfb29a;
       overflow-x: auto;
       white-space: pre;
+      position: relative;
+      z-index: 2;
     }
 
-    .terminal pre .prompt { color: var(--green); }
-    .terminal pre .comment { color: #5a4e38; }
-    .terminal pre .string { color: var(--yellow); }
-    .terminal pre .value { color: #c07848; }
+    .terminal pre .prompt  { color: var(--green-text); }
+    .terminal pre .comment { color: #2e2828; }
+    .terminal pre .string  { color: var(--gold); }
+    .terminal pre .value   { color: #9a6838; }
 
-    /* ── Callout boxes ── */
+    /* ══════════ CALLOUTS ══════════ */
     .callout {
-      border-radius: 8px;
-      padding: 16px 20px;
-      font-size: 14.5px;
+      padding: 14px 18px;
+      font-size: 13.5px;
       display: flex;
       gap: 12px;
       align-items: flex-start;
+      font-family: var(--mono);
+      border-left: 3px solid;
     }
 
-    .callout-icon { font-size: 18px; flex-shrink: 0; line-height: 1.4; }
+    .callout-icon { font-size: 15px; flex-shrink: 0; line-height: 1.7; }
 
     .callout-tip {
-      background: rgba(122,158,92,.10);
-      border: 1px solid rgba(122,158,92,.30);
-      color: #a8c888;
+      background: rgba(40,80,55,0.12);
+      border-color: var(--green-text);
+      color: #6a9a7a;
     }
 
     .callout-warn {
-      background: rgba(212,168,58,.08);
-      border: 1px solid rgba(212,168,58,.28);
-      color: #d4b870;
+      background: rgba(139,110,0,0.08);
+      border-color: #7a6818;
+      color: var(--gold);
     }
 
     .callout-info {
-      background: rgba(201,133,42,.08);
-      border: 1px solid rgba(201,133,42,.28);
-      color: #d4a878;
+      background: var(--red-dim);
+      border-color: var(--red);
+      color: #a86060;
     }
 
-    /* ── Answer reveal ── */
+    /* ══════════ ANSWER BOX ══════════ */
     .answer-box {
-      background: rgba(192,90,56,.10);
-      border: 1px solid rgba(192,90,56,.30);
-      border-radius: 8px;
-      padding: 14px 20px;
+      background: var(--red-dim);
+      border: 1px solid rgba(139,26,26,0.28);
+      padding: 12px 18px;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
+    }
+
+    .answer-box::before {
+      content: '▶';
+      color: var(--red);
+      font-size: 9px;
+      flex-shrink: 0;
     }
 
     .answer-box .answer-label {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .1em;
+      font-family: var(--stamp);
+      font-size: 9px;
+      letter-spacing: .2em;
       color: var(--red);
+      text-transform: uppercase;
     }
 
     .answer-box .answer-value {
-      font-family: 'Cascadia Code', 'Fira Code', monospace;
-      font-size: 1.05rem;
+      font-family: var(--mono);
+      font-size: 1rem;
       font-weight: 700;
-      color: #e0a878;
+      color: var(--gold);
     }
 
-    /* ── TOC ── */
-    .toc {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 24px 28px;
-      margin-bottom: 48px;
-    }
-
-    .toc h2 {
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .1em;
-      color: var(--muted);
-      margin-bottom: 14px;
-    }
-
-    .toc ol {
-      list-style: none;
-      counter-reset: toc;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .toc ol li {
-      counter-increment: toc;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .toc ol li::before {
-      content: counter(toc, decimal-leading-zero);
-      font-size: 11px;
-      color: var(--muted);
-      font-family: monospace;
-      min-width: 22px;
-    }
-
-    .toc ol li a {
-      color: var(--text);
-      text-decoration: none;
-      font-size: 14px;
-      transition: color .15s;
-    }
-
-    .toc ol li a:hover { color: var(--accent); }
-
-    /* ── Footer ── */
+    /* ══════════ FOOTER ══════════ */
     footer {
       border-top: 1px solid var(--border);
       text-align: center;
-      padding: 40px 24px;
+      padding: 48px 24px 40px;
       color: var(--muted);
-      font-size: 13px;
+      font-family: var(--stamp);
+      font-size: 11px;
+      letter-spacing: .1em;
+      position: relative;
     }
 
-    footer a { color: var(--accent); text-decoration: none; }
+    footer::before {
+      content: '— END OF FILE —';
+      display: block;
+      font-size: 9px;
+      letter-spacing: .4em;
+      color: var(--muted2);
+      margin-bottom: 18px;
+      text-transform: uppercase;
+    }
 
-    /* ── Responsive ── */
+    footer a { color: var(--gold); text-decoration: none; }
+
+    /* ══════════ LINKS SECTION ══════════ */
+    .links-section {
+      margin-top: 52px;
+    }
+
+    .links-heading {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .links-rule {
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .links-label {
+      font-family: var(--stamp);
+      font-size: 9px;
+      letter-spacing: .3em;
+      color: var(--muted);
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .links-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .link-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--red);
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      text-decoration: none;
+      transition: border-color .15s, background .15s;
+      position: relative;
+    }
+
+    .link-card:hover {
+      background: var(--surface2);
+      border-left-color: var(--gold);
+    }
+
+    .link-card:hover .link-card-arrow { color: var(--gold); }
+    .link-card:hover .link-card-title { color: var(--gold); }
+
+    .link-card-icon {
+      font-size: 22px;
+      color: var(--red);
+      font-family: var(--mono);
+      flex-shrink: 0;
+      width: 28px;
+      text-align: center;
+      line-height: 1;
+    }
+
+    .link-card:hover .link-card-icon { color: var(--gold); }
+
+    .link-card-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .link-card-title {
+      font-family: var(--stamp);
+      font-size: 13px;
+      letter-spacing: .08em;
+      color: var(--heading);
+      margin-bottom: 3px;
+      transition: color .15s;
+    }
+
+    .link-card-sub {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .link-card-arrow {
+      font-size: 16px;
+      color: var(--muted);
+      flex-shrink: 0;
+      transition: color .15s;
+      font-family: var(--mono);
+    }
+
+    @media (max-width: 600px) {
+      .links-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Closing image */
+    .closing-img {
+      margin-top: 28px;
+      display: block;
+      width: 100%;
+      box-shadow: 6px 6px 0 rgba(0,0,0,0.6), 0 0 0 1px rgba(139,26,26,0.1) !important;
+    }
+
+    /* ══════════ RESPONSIVE ══════════ */
     @media (max-width: 600px) {
       .step-body { padding: 20px; }
-      .step-header { padding: 18px 20px; }
+      .step-header { padding: 16px 20px; }
+      .step-header::after { display: none; }
+      .meta-row { flex-direction: column; }
+      .meta-pill { border-right: none; border-bottom: 1px solid var(--border); }
+      .meta-pill:last-child { border-bottom: none; }
+      .case-stamp::before,
+      .case-stamp::after { display: none; }
     }
   </style>
 </head>
 <body>
 
+<div class="tape"></div>
+
 <!-- ══════════════ HEADER ══════════════ -->
 <header>
-  <div class="tag">CTF Writeup</div>
-  <h1>The <span>Denver Courier</span> Case</h1>
-  <p class="subtitle">
-    A narrative web CTF — missing persons, morse code, FTP servers, and a Caesar cipher walk into a bar.
-  </p>
-  <div class="meta-row">
-    <div class="meta-pill">Category: <strong>Web / OSINT / Crypto</strong></div>
-    <div class="meta-pill">Difficulty: <strong>Beginner–Intermediate</strong></div>
-    <div class="meta-pill">Flag: <strong>Multi-step narrative</strong></div>
+  <div class="header-inner">
+    <div class="case-stamp">Case File No. 1047 &nbsp;·&nbsp; Classified</div>
+    <h1>
+      <span class="the">The</span>
+      Denver Courier Case
+    </h1>
+    <p class="case-number">Missing Person Investigation — CTF Writeup</p>
+    <p class="subtitle">
+      A narrative web CTF — missing persons, morse code, FTP servers,<br>and a Caesar cipher walk into a bar.
+    </p>
+    <div class="meta-row">
+      <div class="meta-pill">Category<strong>Web / OSINT / Crypto</strong></div>
+      <div class="meta-pill">Difficulty<strong>Beginner–Intermediate</strong></div>
+      <div class="meta-pill">Structure<strong>Multi-step narrative</strong></div>
+    </div>
   </div>
 </header>
 
@@ -393,9 +807,8 @@
 <main>
 
   <!-- AI Disclosure -->
-  <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 18px;margin-bottom:28px;font-size:13px;color:var(--muted);display:flex;gap:10px;align-items:flex-start;">
-    <span style="flex-shrink:0;">🤖</span>
-    <span><strong style="color:var(--text);">AI disclosure:</strong> Claude Code was used to build the websites and infrastructure for this CTF. The creative work — the puzzle chain, narrative, ciphers, and challenge design — is entirely my own.</span>
+  <div class="ai-disclosure">
+    <strong>AI disclosure:</strong> Claude Code was used to build the websites and infrastructure for this CTF. The creative work — the puzzle chain, narrative, ciphers, and challenge design — is entirely my own.
   </div>
 
   <!-- Intro -->
@@ -406,7 +819,9 @@
 
   <!-- TOC -->
   <div class="toc">
-    <h2>Table of Contents</h2>
+    <div class="toc-head">
+      <h2>Investigation Log</h2>
+    </div>
     <ol>
       <li><a href="#step-1">Articles — The Denver Courier</a></li>
       <li><a href="#step-2">robots.txt</a></li>
@@ -434,11 +849,11 @@
       <div class="step-body">
         <p>All links to the game land on a fictional news site, 'The Denver Courier', which headlines a segment on a man that went missing in Downtown Denver.</p>
 
-        <img src="img-01-headline.png" alt="The Denver Courier headline — Family Pleads for Help Finding Marcus Dellwood" style="width:100%;border-radius:8px;border:1px solid var(--border);" />
+        <img src="img-01-headline.png" alt="The Denver Courier headline — Family Pleads for Help Finding Marcus Dellwood" style="width:100%;" />
 
         <p>When you navigate to the article you'll see the basic premise of this narrative CTF. Seemingly normal guy suddenly disappears after mysterious circumstances, and the challenges throughout the game come with hints on what happens. There's nothing technical in this article.</p>
 
-        <img src="img-01b-article-text.png" alt="Denver Courier article about Marcus Dellwood's disappearance" style="width:100%;border-radius:8px;border:1px solid var(--border);" />
+        <img src="img-01b-article-text.png" alt="Denver Courier article about Marcus Dellwood's disappearance" style="width:100%;" />
         <p>You'll also see a few other articles but the only one you need to focus on is, "Robots Like Texting, CU Boulder Researchers Discover."</p>
       </div>
     </div>
@@ -452,15 +867,13 @@
       <div class="step-body">
         <p>This was initially the only hint I had since 'robots texting' can only mean one thing in web app security, but it seems like people were struggling with that so I added a banner that linked to robots.txt.</p>
 
-        <img src="img-02-articles-banner.png" alt="Denver Courier article list with robots.txt banner" style="width:100%;border-radius:8px;border:1px solid var(--border);" />
-
-        <img src="img-03-brown-site.png" alt="The Denver Courier brown puzzle page" style="width:100%;border-radius:8px;border:1px solid var(--border);" />
-
-        <img src="img-04-robots-txt.png" alt="robots.txt contents with Base64 string" style="width:100%;border-radius:8px;border:1px solid var(--border);" />
+        <img src="img-02-articles-banner.png" alt="Denver Courier article list with robots.txt banner" style="width:100%;" />
+        <img src="img-03-brown-site.png" alt="The Denver Courier brown puzzle page" style="width:100%;" />
+        <img src="img-04-robots-txt.png" alt="robots.txt contents with Base64 string" style="width:100%;" />
 
         <p>You'll see a strange string below the normal directory permissions. Most CTFs have some form of encoding/decoding challenges so I followed suit with base 64 encoding. You can simply go to a decoding website like the one below (or ask AI.)</p>
 
-        <img src="img-05-base64-decode.png" alt="Base64 decoding — NDUuNTUuNTMuMTAw decodes to 45.55.53.100" style="width:100%;border-radius:8px;border:1px solid var(--border);" />
+        <img src="img-05-base64-decode.png" alt="Base64 decoding — NDUuNTUuNTMuMTAw decodes to 45.55.53.100" style="width:100%;" />
 
         <p>The decoded version is '45.55.53.100' which is the IP address of the VPS (Virtual Private Server) hosting the next clues.</p>
       </div>
@@ -476,12 +889,15 @@
         <p>Run a basic Nmap scan and you'll see the following ports are open.</p>
 
         <div class="terminal">
-          <div class="terminal-bar">
-            <div class="dot dot-red"></div>
-            <div class="dot dot-yellow"></div>
-            <div class="dot dot-green"></div>
-            <div class="terminal-label">bash</div>
+          <div class="terminal-titlebar">
+            <span class="terminal-title">bash — maya@mayadesktop: ~</span>
+            <div class="terminal-controls">
+              <span class="tctrl">─</span>
+              <span class="tctrl">□</span>
+              <span class="tctrl tctrl-x">×</span>
+            </div>
           </div>
+          <div class="terminal-menubar"><span>File</span><span>Edit</span><span>View</span><span>Search</span><span>Terminal</span><span>Help</span></div>
           <pre><span class="prompt">maya@mayadesktop:~$</span> nmap -sV 45.55.53.100
 Starting Nmap 7.94SVN ( https://nmap.org ) at 2026-05-17 19:06 MDT
 Nmap scan report for 45.55.53.100
@@ -513,12 +929,15 @@ Nmap done: 1 IP address (1 host up) scanned in 2.16 seconds</pre>
         <p>Seems like Marcus is a bad security professional since he allows anonymous authentication on his diary FTP server. Connect using the following command with 'anonymous' as the username and a blank password.</p>
 
         <div class="terminal">
-          <div class="terminal-bar">
-            <div class="dot dot-red"></div>
-            <div class="dot dot-yellow"></div>
-            <div class="dot dot-green"></div>
-            <div class="terminal-label">bash</div>
+          <div class="terminal-titlebar">
+            <span class="terminal-title">bash — maya@mayadesktop: ~</span>
+            <div class="terminal-controls">
+              <span class="tctrl">─</span>
+              <span class="tctrl">□</span>
+              <span class="tctrl tctrl-x">×</span>
+            </div>
           </div>
+          <div class="terminal-menubar"><span>File</span><span>Edit</span><span>View</span><span>Search</span><span>Terminal</span><span>Help</span></div>
           <pre><span class="prompt">maya@mayadesktop:~$</span> ftp 45.55.53.100
 Connected to 45.55.53.100.
 220 pyftpdlib 2.2.0 ready.
@@ -533,27 +952,33 @@ Using binary mode to transfer files.</pre>
         <p>Explore the directory and you'll find the following files.</p>
 
         <div class="terminal">
-          <div class="terminal-bar">
-            <div class="dot dot-red"></div>
-            <div class="dot dot-yellow"></div>
-            <div class="dot dot-green"></div>
-            <div class="terminal-label">ftp</div>
+          <div class="terminal-titlebar">
+            <span class="terminal-title">ftp — 45.55.53.100</span>
+            <div class="terminal-controls">
+              <span class="tctrl">─</span>
+              <span class="tctrl">□</span>
+              <span class="tctrl tctrl-x">×</span>
+            </div>
           </div>
+          <div class="terminal-menubar"><span>File</span><span>Edit</span><span>View</span><span>Search</span><span>Terminal</span><span>Help</span></div>
           <pre>ftp> ls
 -rw-r--r--   1 root  root   36 May 04 01:58 <span class="string">coords.txt</span>
 -rw-r--r--   1 root  root  528 May 06 00:30 <span class="string">journal.txt</span>
 -rw-r--r--   1 root  root   24 May 06 12:58 <span class="string">password.txt</span></pre>
         </div>
 
-        <p>Use the get command to install the files. It's generally good security hygiene to use a virtual machine for CTFs since you shouldn't be downloading random files onto your computer, but I promise you there's no malware here!</p>
+        <p>Use the get command to download the files. It's generally good security hygiene to use a virtual machine for CTFs since you shouldn't be downloading random files onto your computer, but I promise you there's no malware here!</p>
 
         <div class="terminal">
-          <div class="terminal-bar">
-            <div class="dot dot-red"></div>
-            <div class="dot dot-yellow"></div>
-            <div class="dot dot-green"></div>
-            <div class="terminal-label">ftp</div>
+          <div class="terminal-titlebar">
+            <span class="terminal-title">ftp — 45.55.53.100</span>
+            <div class="terminal-controls">
+              <span class="tctrl">─</span>
+              <span class="tctrl">□</span>
+              <span class="tctrl tctrl-x">×</span>
+            </div>
           </div>
+          <div class="terminal-menubar"><span>File</span><span>Edit</span><span>View</span><span>Search</span><span>Terminal</span><span>Help</span></div>
           <pre>ftp> get coords.txt
 226 Transfer complete. (36 bytes)
 ftp> get journal.txt
@@ -573,9 +998,9 @@ ftp> bye
         <div class="step-title">The Coordinates</div>
       </div>
       <div class="step-body">
-        <p>You'll find that one of the files, coords.txt, contains latitude/longitude coordinates. Go to Google maps and paste 39.753187, -105.000093. Union station will be a clue in an upcoming challenge.</p>
+        <p>You'll find that one of the files, coords.txt, contains latitude/longitude coordinates. Go to Google Maps and paste 39.753187, -105.000093. Union Station will be a clue in an upcoming challenge.</p>
 
-        <img src="img-05-union-station.png" alt="Google Maps pin on Union Station, Denver — 39.753187, -105.000093" style="width:100%;border-radius:8px;border:1px solid var(--border);" />
+        <img src="img-05-union-station.png" alt="Google Maps pin on Union Station, Denver — 39.753187, -105.000093" style="width:100%;" />
       </div>
     </div>
 
@@ -586,15 +1011,18 @@ ftp> bye
         <div class="step-title">The Password — Morse Code</div>
       </div>
       <div class="step-body">
-        <p>Use the cat command again on passwords.txt and you'll find a series of dots and dashes.</p>
+        <p>Use the cat command on password.txt and you'll find a series of dots and dashes.</p>
 
         <div class="terminal">
-          <div class="terminal-bar">
-            <div class="dot dot-red"></div>
-            <div class="dot dot-yellow"></div>
-            <div class="dot dot-green"></div>
-            <div class="terminal-label">bash</div>
+          <div class="terminal-titlebar">
+            <span class="terminal-title">bash — maya@mayadesktop: ~</span>
+            <div class="terminal-controls">
+              <span class="tctrl">─</span>
+              <span class="tctrl">□</span>
+              <span class="tctrl tctrl-x">×</span>
+            </div>
           </div>
+          <div class="terminal-menubar"><span>File</span><span>Edit</span><span>View</span><span>Search</span><span>Terminal</span><span>Help</span></div>
           <pre><span class="prompt">maya@mayadesktop:~$</span> cat password.txt
 <span class="value">----- ..... ..--- .....</span></pre>
         </div>
@@ -613,12 +1041,15 @@ ftp> bye
         <p>We also get some very upbeat diary entries from Marcus.</p>
 
         <div class="terminal">
-          <div class="terminal-bar">
-            <div class="dot dot-red"></div>
-            <div class="dot dot-yellow"></div>
-            <div class="dot dot-green"></div>
-            <div class="terminal-label">bash</div>
+          <div class="terminal-titlebar">
+            <span class="terminal-title">bash — maya@mayadesktop: ~</span>
+            <div class="terminal-controls">
+              <span class="tctrl">─</span>
+              <span class="tctrl">□</span>
+              <span class="tctrl tctrl-x">×</span>
+            </div>
           </div>
+          <div class="terminal-menubar"><span>File</span><span>Edit</span><span>View</span><span>Search</span><span>Terminal</span><span>Help</span></div>
           <pre><span class="prompt">maya@mayadesktop:~$</span> cat journal.txt
 March 3, 2026
 
@@ -650,16 +1081,19 @@ Follow the numbers.
         <div class="step-title">SSH Banner Grabbing</div>
       </div>
       <div class="step-body">
-        <p>Unfortunately I may have mislead some of the users since this part requires you to ATTEMPT to authenticate, but you don't have to succeed at all.</p>
+        <p>Unfortunately I may have misled some of the players since this part requires you to ATTEMPT to authenticate — but you don't have to succeed at all.</p>
         <p>You'll find a link to a Codepen site via banner grabbing.</p>
 
         <div class="terminal">
-          <div class="terminal-bar">
-            <div class="dot dot-red"></div>
-            <div class="dot dot-yellow"></div>
-            <div class="dot dot-green"></div>
-            <div class="terminal-label">bash</div>
+          <div class="terminal-titlebar">
+            <span class="terminal-title">bash — maya@mayadesktop: ~</span>
+            <div class="terminal-controls">
+              <span class="tctrl">─</span>
+              <span class="tctrl">□</span>
+              <span class="tctrl tctrl-x">×</span>
+            </div>
           </div>
+          <div class="terminal-menubar"><span>File</span><span>Edit</span><span>View</span><span>Search</span><span>Terminal</span><span>Help</span></div>
           <pre><span class="prompt">maya@mayadesktop:~$</span> ssh fakeuser@45.55.53.100
 <span class="string">MARCUS-SECRET-STUFF // UNAUTHORIZED ACCESS DETECTED
 
@@ -676,17 +1110,17 @@ fakeuser@45.55.53.100: Permission denied (publickey).</pre>
         <div class="step-title">Codepen — Binary &amp; Union</div>
       </div>
       <div class="step-body">
-        <p>You'll land on the Codepen page below - (The Marcus Aurelius reference is kind of a shoutout to the philosophy side of symbolic logic/set theory. I'm not a stoic, I promise.)</p>
+        <p>You'll land on the Codepen page below — (The Marcus Aurelius reference is a shoutout to the philosophy side of symbolic logic/set theory. I'm not a stoic, I promise.)</p>
 
-        <img src="img-08-codepen.png" alt="Codepen — MARCUS-AURELIUS symbolic logic binary challenge" style="width:100%;border-radius:8px;border:1px solid var(--border);" />
+        <img src="img-08-codepen.png" alt="Codepen — MARCUS-AURELIUS symbolic logic binary challenge" style="width:100%;" />
 
-        <p>You're presented with two binary strings along with some choices of what operator to use on it. We found the coordinates for Union Station earlier so the correct operator to use here is union as well. There's a button that does all the calculating for you.</p>
+        <p>You're presented with two binary strings along with some choices of what operator to use. We found the coordinates for Union Station earlier, so the correct operator to use here is union as well. There's a button that does all the calculating for you.</p>
 
-        <img src="img-09-union-result.png" alt="Codepen — Union operation result binary string" style="width:100%;border-radius:8px;border:1px solid var(--border);" />
+        <img src="img-09-union-result.png" alt="Codepen — Union operation result binary string" style="width:100%;" />
 
-        <p>Put that in a binary decoder and you'll get 'the runaway'</p>
+        <p>Put that in a binary decoder and you'll get 'the runaway.'</p>
 
-        <img src="img-10-binary-decoder.png" alt="Binary decoder — result decodes to 'therunaway'" style="width:100%;border-radius:8px;border:1px solid var(--border);" />
+        <img src="img-10-binary-decoder.png" alt="Binary decoder — result decodes to 'therunaway'" style="width:100%;" />
       </div>
     </div>
 
@@ -699,11 +1133,11 @@ fakeuser@45.55.53.100: Permission denied (publickey).</pre>
       <div class="step-body">
         <p>The phrase "the runaway" is the username for a hidden login portal connected to the original Denver Courier site. Running DirBuster against the landing page (or manually navigating to /login) reveals the link to the portal.</p>
 
-        <img src="img-11-fake-login.png" alt="Denver Courier Staff Login page with Caesar cipher clue" style="width:100%;border-radius:8px;border:1px solid var(--border);" />
+        <img src="img-11-fake-login.png" alt="Denver Courier Staff Login page with Caesar cipher clue" style="width:100%;" />
 
-        <p>You'll see there's a link-like string, oaawz://thfhkvbnshz1101.npaobi.pv/svnpu-whnl/, but it isn't formatted like a domain. 'Is anyone feeling like a salad' is a clue to the cipher used on the domain - Caesar cipher. Decode it with a website (or AI) to reveal https://mayadouglas1101.github.io/login-page/.</p>
+        <p>You'll see there's a link-like string, oaawz://thfhkvbnshz1101.npaobi.pv/svnpu-whnl/, but it isn't formatted like a domain. 'Is anyone feeling like a salad' is a clue to the cipher used — Caesar cipher. Decode it with a website (or AI) to reveal https://mayadouglas1101.github.io/login-page/.</p>
 
-        <img src="img-12-real-login.png" alt="Missing Persons Digital Evidence Portal — restricted access login" style="width:100%;border-radius:8px;border:1px solid var(--border);" />
+        <img src="img-12-real-login.png" alt="Missing Persons Digital Evidence Portal — restricted access login" style="width:100%;" />
       </div>
     </div>
 
@@ -716,7 +1150,7 @@ fakeuser@45.55.53.100: Permission denied (publickey).</pre>
       <div class="step-body">
         <p>Enter the credentials 'therunaway' and '0525' in 'Secure Terminal' and you'll find Marcus's confession.</p>
 
-        <img src="img-13-confession.png" alt="Marcus Dellwood's recovered journal entry — Entry #214 That's a Wrap" style="width:100%;border-radius:8px;border:1px solid var(--border);" />
+        <img src="img-13-confession.png" alt="Marcus Dellwood's recovered journal entry — Entry #214 That's a Wrap" style="width:100%;" />
 
         <p>At this point, Marcus disappearing into the wilderness may have been the healthiest possible outcome for everyone involved.</p>
       </div>
@@ -724,18 +1158,45 @@ fakeuser@45.55.53.100: Permission denied (publickey).</pre>
 
   </div><!-- /steps -->
 
-  <div class="intro-box" style="margin-top: 56px; margin-bottom: 0;">
+  <div class="intro-box" style="margin-top:52px;margin-bottom:0;">
     <p>That's all, folks! There is a leaderboard, but I won't be sharing it here for privacy purposes.</p>
   </div>
 
-  <img src="img-14-thankyou.png" alt="End of file — Thank You from the CTF creator" style="width:100%;border-radius:8px;border:1px solid var(--border);margin-top:24px;display:block;" />
+  <img src="img-14-thankyou.png" alt="End of file — Thank You from the CTF creator" class="closing-img" />
+
+  <!-- Links section -->
+  <div class="links-section">
+    <div class="links-heading">
+      <span class="links-rule"></span>
+      <span class="links-label">Still Here?</span>
+      <span class="links-rule"></span>
+    </div>
+    <div class="links-grid">
+      <a href="https://mayadouglas1101.github.io/ctf-missing/" class="link-card" target="_blank" rel="noopener">
+        <div class="link-card-icon">⌖</div>
+        <div class="link-card-body">
+          <div class="link-card-title">Play the CTF</div>
+          <div class="link-card-sub">mayadouglas1101.github.io/ctf-missing</div>
+        </div>
+        <div class="link-card-arrow">→</div>
+      </a>
+      <a href="https://discord.gg/Sy9YTJqxv" class="link-card" target="_blank" rel="noopener">
+        <div class="link-card-icon">#</div>
+        <div class="link-card-body">
+          <div class="link-card-title">Join the Discord</div>
+          <div class="link-card-sub">discord.gg/Sy9YTJqxv</div>
+        </div>
+        <div class="link-card-arrow">→</div>
+      </a>
+    </div>
+  </div>
 
 </main>
 
 <!-- ══════════════ FOOTER ══════════════ -->
 <footer>
-  <p>CTF writeup — The Denver Courier Case</p>
-  <p style="margin-top:8px;">Made with obsessive puzzle energy and too much coffee.</p>
+  <p>The Denver Courier Case &nbsp;·&nbsp; CTF Writeup</p>
+  <p style="margin-top:6px;">Made with obsessive puzzle energy and too much coffee.</p>
 </footer>
 
 </body>
